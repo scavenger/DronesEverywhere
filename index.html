@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<link rel="stylesheet" type="text/css" media="all" href="css/styles.css">
+	<script type="text/javascript" src="js/utils.js"></script>	
+	<script type="text/javascript" src="js/pathFinder.js"></script>		
+</head>
+
+<body>
+
+<div id="drop_zone">Drop input data file here</div>
+<output id="console">...</output>
+
+<canvas id="myCanvas" width="1500" height="3000" style="border:1px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.</canvas>
+
+<script>
+	
+	var scale = 30;
+	var badBookingsCnt = 0;
+	var c = document.getElementById("myCanvas");
+	var ctx = c.getContext("2d");
+	ctx.font = "14px Arial";
+
+	// define handlers and the Chain of Responsability
+	// var validator = new HandlersModule.Validator();
+	// var renderer = new HandlersModule.Renderer();
+	// var writer = new HandlersModule.Writer();
+
+	// validator.setNextHandler(renderer);
+	// renderer.setNextHandler(writer);
+
+	// setup listeners
+	var dropZone = document.getElementById('drop_zone');
+	dropZone.addEventListener('dragover', UtilsModule.handleDragOver, false);
+	dropZone.addEventListener('drop', UtilsModule.handleFileSelect, false);
+
+	// subscribe to internal pub/sub events
+	UtilsModule.EventBus.subscribe('newInput', function(fileName){
+		document.getElementById('console').innerHTML = 'Processing data from <strong>' + escape(fileName) + '</strong>...<br /><br />';
+	});
+
+	UtilsModule.EventBus.subscribe('dataLoaded', function(fileContent){
+		processFile(fileContent);
+	});
+
+	// UtilsModule.EventBus.subscribe('renderData', function(booking){
+	// 	var validationDetails = booking.getValidationDetails();
+
+	// 	ctx.fillStyle = validationDetails.color;
+	// 	ctx.fillRect(booking.startSeat * scale, booking.startRow * scale, booking.seats * scale, booking.rows * scale);
+	// 	ctx.rect(booking.startSeat * scale, booking.startRow * scale, booking.seats * scale, booking.rows * scale);
+	// 	ctx.stroke();
+	// 	ctx.fillStyle='black';
+	// 	ctx.fillText(booking.id, booking.startSeat * scale, booking.startRow * scale + 14);
+	// });
+
+	// UtilsModule.EventBus.subscribe('writeData', function(booking){
+	// 	if(booking.validationId > 0){
+	// 		var validationDetails = booking.getValidationDetails();
+	// 		var msg = '#' + booking.id + ' (' + booking.startRow + ', ' + booking.startSeat + ', ' + booking.rows + ', ' + booking.seats + ') - ' + validationDetails.msg;
+	// 	 	logToConsoles(msg);
+	// 		badBookingsCnt++;
+	// 	}
+	// });	
+
+	function processFile(fileData){
+
+		var data = JSON.parse(fileData);
+		console.log(data);
+
+		//logToConsoles('... we\'ve got ' + badBookingsCnt + ' bad bookings.');
+	}
+
+	function logToConsoles(msg){
+		document.getElementById('console').innerHTML += msg + '<br />';
+		console.log(msg);
+	}
+
+</script>
+
+</body>
+</html>
