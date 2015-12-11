@@ -1,0 +1,57 @@
+LDA [1000] // flag care marcheaza initializarea
+JGE #init // daca nu s-a facut initializarea, o fac
+LDA 0
+JGE #process
+LDA -1 //#init START
+STA [1000] // marchez initializarea, salvez calea
+LDA 0
+STA [3000]
+LDA 2
+STA [4000]
+LDA 2
+STA [3001]
+LDA 3
+STA [4001]
+LDA 0
+STA [3002]
+LDA 2
+STA [4002]
+LDA 0
+STA [3003]
+LDA 3
+STA [4003]
+LDA 0
+STA [3004]
+LDA 2
+STA [4004]
+LDA 1
+STA [3005]
+LDA 3
+STA [4005]
+LDA 1
+STA [3006]
+LDA 2
+STA [4006]
+LDA 0
+STA [3007]
+LDA 3
+STA [4007]
+LDA 3000
+STA [1001] //#init END
+LDN [1001] //#process START
+LDA [N]
+JGE #incrementPas // verific daca mai calc in directia asta, 
+LDA [1001] //#incrementTip trec la urmatorul tip de pasului
+ADDA 1
+STA [1001]
+LDA 0
+JGE #process
+SUBA 1 //#incrementPas
+STA [N] // salvez pointerul decrementat
+LDA [1001] // merg la tipul pasului
+ADDA 1000
+STA [1002]
+LDN [1002]
+LDA [N] // iau tipul pasului si-l execut
+STA [0]
+HLT //#halt
