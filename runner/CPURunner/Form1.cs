@@ -28,7 +28,8 @@ namespace CPURunner
 
             int completeRuns = 0;
 
-            var trackMemory = new[] {0, 1000, 1001, 1002, 3000, 4000, 3001, 4001, 3002, 4002, 3003, 4003, 3004, 4004, 3005, 4005, 3006, 4006};
+            var trackMemory = new[] {0, 1000, 1001, 1002, 1003, 1004, 3000, 4000, 3001, 4001, 3002, 4002, 3003, 4003, 3004, 4004, 3005, 4005, 3006, 4006};
+            long instructions = 0;
 
             while (true)
             {
@@ -39,6 +40,12 @@ namespace CPURunner
                 var skipIt = false;
                 int newLineCnt = lineCnt;
 
+                if (instructions > 200)
+                {
+                    return;
+                }
+                instructions++;
+
                 if (value.Contains("["))
                 {
                     address = value.Contains("N") ? N : Convert.ToInt32(value.Substring(1, value.Length - 2));
@@ -47,6 +54,8 @@ namespace CPURunner
 
                 switch (token)
                 {
+                    case "NOP":
+                        break;
                     case "LDA":
                         A = hasAddress ? memory[address] : Convert.ToInt32(value);
                         break;
@@ -54,8 +63,8 @@ namespace CPURunner
                         if (A >= 0)
                         {
                             lineCnt = Convert.ToInt32(value);
+                            skipIt = true;
                         }
-                        skipIt = true;
                         break;
                     case "STA":
                         if (hasAddress)
@@ -67,16 +76,26 @@ namespace CPURunner
                         N = hasAddress ? memory[address] : Convert.ToInt32(value);
                         break;
                     case "ADDA":
-                        A += Convert.ToInt32(value);
+                        if (hasAddress)
+                        {
+                            A += Convert.ToInt32(memory[address]);
+                        }
+                        else
+                            A += Convert.ToInt32(value);
                         break;
                     case "SUBA":
-                        A -= Convert.ToInt32(value);
+                        if (hasAddress)
+                        {
+                            A -= Convert.ToInt32(memory[address]);
+                        }
+                        else
+                            A -= Convert.ToInt32(value);
                         break;
                     case "HLT":
                         lineCnt = 0;
                         skipIt = true;
                         completeRuns++;
-                        if (completeRuns > 8)
+                        if (completeRuns > 5)
                         {
                             return;
                         }
@@ -103,7 +122,7 @@ namespace CPURunner
 
         private void btnLoadIt_Click(object sender, EventArgs e)
         {
-            this.ParseFile(@"C:\WORK\amazon2015\output\01_letsGetToKnowEachOther.txt");
+            this.ParseFile(@"Z:\Volumes\data\WORK\Sublime\amazon2015\output\04_gottaCircleAround.txt");
         }
     }
 }

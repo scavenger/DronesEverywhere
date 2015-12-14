@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "explor": "^0.1.1",
     "node-pathfinding": "^0.2.6"
   }
 }
