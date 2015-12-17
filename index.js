@@ -10,7 +10,7 @@ var Set = require('explor/node_modules/collections/set');
 
 var cmdHOLD = 0, cmdUP = 1, cmdRIGHT = 2, cmdDOWN = 3, cmdLEFT = 4;
 
-var datasetName = "04_gottaCircleAround.txt";
+var datasetName = "05_thinkAhead.txt";
 
 var graph = new SimplePlane();
 var blocked = new Set();
@@ -23,8 +23,8 @@ var fixe = [];
 
 function block(x, y) {
 	var node = graph.get({x:x, y:y});
-	//blocked.add(node);
-	graph.block(node);
+	blocked.add(node);
+	//graph.block(node);
 }
 
 function toggleBlock(x, y) {
@@ -47,7 +47,7 @@ function runExplor(mapData, start, end, inputData){
 	graph = SimplePlane.fromString(mapData);
 	//console.log(graph.blocked);
 
-	var algorithm = algorithms["D*"];
+	var algorithm = algorithms["A*"];
 	var heuristic = graph.heuristics["default"];
 
 	console.log('start/end:');
@@ -58,26 +58,27 @@ function runExplor(mapData, start, end, inputData){
 
 
 	function check() {
-		//console.log('>run check...' + generalFrame);
+
+		console.log('>run check...' + generalFrame + 1);
 
 		blocked.clear();
-		graph.clear();
-		var blockedNodes = getTempBlockedNodes(generalFrame, inputData);
+		//graph.blocked.clear();
+		var blockedNodes = getTempBlockedNodes(generalFrame + 1, inputData);
 		blockedNodes.forEach(function(el){
 			block(el.x, el.y);
 		});
 
-  		var mapData = buildExplorMap(inputData, blockedNodes);
-  		//console.log(mapData);		
+  		var mapData = buildExplorMap(inputData, blockedNodes, currentData || start);
+  		console.log(mapData);		
 
-		// graph.getSuccessors(bot.current).forEach(function (node) {
-		// 	if (blocked.has(node)) {
-		// 		graph.block(node);
-		// 	}else
-		// 	{
-		// 		//graph.unblock(node);
-		// 	}
-		// })
+		graph.getSuccessors(bot.current).forEach(function (node) {
+			if (blocked.has(node)) {
+				graph.block(node);
+			}else
+			{
+				graph.unblock(node);
+			}
+		})
 
 		//console.log(finalPath);
 	}
@@ -97,7 +98,7 @@ function runExplor(mapData, start, end, inputData){
 		//console.log('>addframe:' + frameCnt);
 
 		//console.log(data.path);
-		framequeue.push(data);
+		//framequeue.push(data);
 		frameCnt++;
 	}
 
@@ -108,6 +109,7 @@ function runExplor(mapData, start, end, inputData){
 		currentData = finalPath.length == 0 ? start : finalPath[finalPath.length - 1];
 
 		generalFrame++;
+		data.current.frame = generalFrame;		
 		finalPath.push(data.current);
 
 		//addframe(data);
@@ -134,7 +136,7 @@ function runExplor(mapData, start, end, inputData){
 
 	bot = new Explorer(start, end, graph, algorithm, heuristic);
 	bot.on('step', check);
-	bot.step().then(step).progress(addframe).catch(err);
+	bot.step().then(step).catch(err);
 	// bot.findPath().then(function(data){
 	//  	console.log('ALL done!');
 
@@ -150,6 +152,7 @@ fs.readFile('data/' + datasetName, 'utf8', function (err, data) {
   	var inputData = JSON.parse(data);
 
 	inputData.map.objects.forEach(function(el){
+		el.stepNumber = 0;
 		if(el.type == "Cetatean"){
 			cetateni.push(el);
 		}
@@ -159,11 +162,28 @@ fs.readFile('data/' + datasetName, 'utf8', function (err, data) {
 	});
 
    	var blockedNodes = getTempBlockedNodes(0, inputData);
-  	var mapData = buildExplorMap(inputData, blockedNodes);
+  	var mapData = buildExplorMap(inputData, blockedNodes, inputData.simulatedDrone.position);
   	console.log(mapData);
 
 	//mapData = buildMap(inputData);
   	//console.log(mapData);
+
+  // 	var cmds = [ { command: 1, count: 1, name: 'UP' }, 
+  // { command: 2, count: 4, name: 'RIGHT' }, 
+  // { command: 1, count: 4, name: 'UP' }, 
+  // { command: 4, count: 3, name: 'LEFT' }, 
+  // { command: 1, count: 1, name: 'UP' }, 
+  // { command: 4, count: 1, name: 'LEFT' }, 
+  // { command: 1, count: 2, name: 'UP' }, 
+  // { command: 4, count: 10, name: 'LEFT' }, 
+  // { command: 3, count: 1, name: 'DOWN' }, 
+  // { command: 2, count: 3, name: 'RIGHT' }, 
+  // { command: 1, count: 16, name: 'UP' }, 
+  // { command: 3, count: 3, name: 'DOWN' }, 
+  // { command: 2, count: 1, name: 'RIGHT' }, 
+  // { command: 1, count: 1, name: 'UP' }, 
+  // { command: 2, count: 7, name: 'RIGHT' } ];
+  // generateCPU(cmds);
 
   	runExplor(mapData, inputData.simulatedDrone.position, inputData.map.target, inputData);
 
@@ -181,31 +201,47 @@ function getTempBlockedNodes(frame, inputData){
 		return {x: el.position.x, y: el.position.y};
 	});
 
+	if(inputData.steps){
+		inputData.steps.forEach(function(step){
+			if(step.stepNumber == frame + 1){
+				step.objects.forEach(function(object){
+					object.stepNumber = step.stepNumber;
+					if(object.type == "Cetatean" || object.controller.direction){
+						console.log('frame #' + frame + ' - ' + object.identifier);
+						cetateni.push(object);
+					}else{
+						
+					}
+				})
+			}
+		});
+	}
+
 
 	cetateni.forEach(function(el){
 		var currentPosition = {x: el.position.x, y: el.position.y};
 		switch(el.direction){
 			case "RIGHT":
 				//if(currentPosition.x + frame < inputData.map.cols)
-					currentPosition.x += frame;
+					currentPosition.x += (frame - el.stepNumber);
 				//else
 				//	currentPosition.x = inputData.map.cols - 1;
 				break;
 			case "LEFT":
 				//if(currentPosition.x - frame >= 0)
-					currentPosition.x -= frame;
+					currentPosition.x -= (frame - el.stepNumber);
 				//else
 				//	currentPosition.x = 0;
 				break;
 			case "DOWN":
 				//if(currentPosition.y + frame < inputData.map.rows)
-					currentPosition.y += frame;
+					currentPosition.y += (frame - el.stepNumber);
 				//else
 				//	currentPosition.y = inputData.map.rows - 1;
 				break;
 			case "UP":
 				//if(currentPosition.y - frame >= 0)
-					currentPosition.y -= frame;
+					currentPosition.y -= (frame - el.stepNumber);
 				//else
 				//	currentPosition.y = 0;
 				break;
@@ -263,7 +299,7 @@ function buildMap(inputData){
     return arr;
 }
 
-function buildExplorMap(inputData, blockedNodes){
+function buildExplorMap(inputData, blockedNodes, currentPosition){
    var output = [];
 
    for (var i = 0; i < inputData.map.cols; ++i){
@@ -273,8 +309,14 @@ function buildExplorMap(inputData, blockedNodes){
       	})){
 	        output += 'o';
       	}else{
-	        output += '#';      		
+			output += '_';      		
       	}
+
+  		if(j == currentPosition.x && i == currentPosition.y){
+  			output += 'A';
+  		}else if(j == inputData.map.target.x && i == inputData.map.target.y){
+  			output += 'B';
+  		}      	
       }
       output += '\n';
     }
